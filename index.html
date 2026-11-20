@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Генерация артов (демо)</title>
+  <style>
+    :root{
+      --bg:#0B3D6B;
+      --card:#0f172a;
+      --text:#e5e7eb;
+      --muted:#94a3b8;
+      --accent:#38bdf8;
+      --accent2:#a78bfa;
+      --danger:#fb7185;
+      --ok:#34d399;
+    }
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: radial-gradient(1200px 600px at 20% 0%, #123a6e, var(--bg));
+      color: var(--text);
+      min-height: 100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:20px;
+    }
+    .wrap{
+      width:min(900px, 100%);
+      background: rgba(15, 23, 42, 0.75);
+      border:1px solid rgba(255,255,255,0.08);
+      border-radius:18px;
+      padding:22px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+      backdrop-filter: blur(6px);
+    }
+    h1{ font-size:20px; margin:0 0 6px; }
+    .sub{ color: var(--muted); margin:0 0 18px; line-height:1.35; }
+    .row{
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:space-between;
+      margin-bottom:14px;
+    }
+    button{
+      border:0;
+      padding:12px 16px;
+      border-radius:12px;
+      cursor:pointer;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color:#08111f;
+      font-weight:700;
+      box-shadow: 0 10px 25px rgba(56,189,248,0.25);
+      transition: transform .08s ease, filter .15s ease;
+      user-select:none;
+    }
+    button:active{ transform: translateY(1px); }
+    button[disabled]{ filter: grayscale(0.4) brightness(0.8); cursor:not-allowed; }
+    .controls{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+    label{
+      font-size:13px;
+      color: var(--muted);
+      display:flex;
+      gap:8px;
+      align-items:center;
+    }
+    input[type="number"], select{
+      background: rgba(255,255,255,0.06);
+      border:1px solid rgba(255,255,255,0.12);
+      color: var(--text);
+      padding:8px 10px;
+      border-radius:10px;
+      outline:none;
+    }
+    #progressWrap{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:12px;
+      margin-top:10px;
+    }
+    .bar{
+      height:14px;
+      border-radius:999px;
+      background: rgba(255,255,255,0.08);
+      overflow:hidden;
+      border:1px solid rgba(255,255,255,0.10);
+    }
+    .bar > div{
+      height:100%;
+      width:0%;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      transition: width .2s ease;
+    }
+    .status{
+      display:flex;
+      gap:12px;
+      align-items:flex-start;
+      justify-content:space-between;
+      flex-wrap:wrap;
+    }
+    .status .left{
+      display:flex;
+      gap:10px;
+      align-items:center;
+    }
+    .dot{
+      width:12px; height:12px; border-radius:50%;
+      background: var(--muted);
+      box-shadow: 0 0 0 4px rgba(148,163,184,0.18);
+      margin-top:2px;
+    }
+    .dot.running{ background: var(--accent); box-shadow: 0 0 0 4px rgba(56,189,248,0.18); }
+    .dot.done{ background: var(--ok); box-shadow: 0 0 0 4px rgba(52,211,153,0.18); }
+    .dot.fail{ background: var(--danger); box-shadow: 0 0 0 4px rgba(251,113,133,0.18); }
+
+    .status .meta{
+      display:flex;
+      flex-direction:column;
+      gap:3px;
+    }
+    .status .meta .main{
+      font-weight:800;
+    }
+    .status .meta .hint{
+      color: var(--muted);
+      font-size:13px;
+    }
+
+    #gallery{
+      margin-top:16px;
+      display:grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap:12px;
+    }
+    .card{
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,0.10);
+      background: rgba(2,6,23,0.35);
+      overflow:hidden;
+    }
+    .thumb{
+      height:110px;
+      background: linear-gradient(135deg, rgba(56,189,248,0.25), rgba(167,139,250,0.25));
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color: rgba(255,255,255,0.85);
+      font-weight:800;
+      letter-spacing:.2px;
+    }
+    .card .body{
+      padding:10px 12px 12px;
+    }
+    .card .title{
+      font-weight:800;
+      font-size:14px;
+      margin-bottom:6px;
+    }
+    .card .small{
+      color: var(--muted);
+      font-size:12px;
+      line-height:1.3;
+      word-break:break-word;
+    }
+    .footerNote{
+      margin-top:14px;
+      color: var(--muted);
+      font-size:12px;
+      line-height:1.35;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Кнопка: “Создать все арты Артёма (фурри)”</h1>
+    <p class="sub">
+      Это <b>демо</b>: при нажатии кнопки запускается “процесс” с прогресс-баром и галереей,
+      а также имитируется генерация карточек. Для реальной генерации подключают сервер/AI API.
+    </p>
+
+    <div class="row">
+      <button id="startBtn">🧪 Запустить создание всех артов</button>
+
+      <div class="controls">
+        <label>
+          Кол-во артов:
+          <input id="countInput" type="number" min="1" max="50" value="12" />
+        </label>
+        <label>
+          Симуляция задержки (мс):
+          <input id="delayInput" type="number" min="50" max="5000" value="450" />
+        </label>
+      </div>
+    </div>
+
+    <div id="progressWrap">
+      <div class="bar" aria-label="Прогресс">
+        <div id="barFill"></div>
+      </div>
+
+      <div class="status">
+        <div class="left">
+          <div id="dot" class="dot"></div>
+          <div class="meta">
+            <div class="main" id="statusMain">Ожидание</div>
+            <div class="hint" id="statusHint">Нажмите кнопку, чтобы начать процесс.</div>
+          </div>
+        </div>
+        <div class="meta" style="text-align:right; min-width:160px;">
+          <div class="main" id="statusProgress">0 / 0</div>
+          <div class="hint" id="statusEta">—</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="gallery" aria-live="polite"></div>
+
+    <div class="footerNote">
+      Если хотите, я могу: (1) переделать это под реальный backend (Node/Python),
+      (2) добавить загрузку готовых картинок с вашего API,
+      (3) сделать статусы “скан промптов / очередь / генерация / постобработка”.
+    </div>
+  </div>
+
+  <script>
+    const startBtn = document.getElementById('startBtn');
+    const countInput = document.getElementById('countInput');
+    const delayInput = document.getElementById('delayInput');
+
+    const barFill = document.getElementById('barFill');
+    const dot = document.getElementById('dot');
+    const statusMain = document.getElementById('statusMain');
+    const statusHint = document.getElementById('statusHint');
+    const statusProgress = document.getElementById('statusProgress');
+    const statusEta = document.getElementById('statusEta');
+    const gallery = document.getElementById('gallery');
+
+    function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
+
+    function setDot(mode){
+      dot.classList.remove('running','done','fail');
+      if(mode) dot.classList.add(mode);
+    }
+
+    function escapeHtml(s){
+      return String(s).replace(/[&<>"']/g, c => ({
+        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+      }[c]));
+    }
+
+    function makeCard(i, prompt, variant){
+      const card = document.createElement('div');
+      card.className = 'card';
+
+      const thumb = document.createElement('div');
+      thumb.className = 'thumb';
+      thumb.textContent = `арт #${i+1}`;
+
+      const body = document.createElement('div');
+      body.className = 'body';
+
+      const t = document.createElement('div');
+      t.className = 'title';
+      t.textContent = variant;
+
+      const s = document.createElement('div');
+      s.className = 'small';
+      s.textContent = prompt;
+
+      body.appendChild(t);
+      body.appendChild(s);
+      card.appendChild(thumb);
+      card.appendChild(body);
+      return card;
+    }
+
+    startBtn.addEventListener('click', async () => {
+      const total = Math.max(1, Math.min(50, Number(countInput.value || 12)));
+      const delay = Math.max(50, Math.min(5000, Number(delayInput.value || 450)));
+
+      // Reset UI
+      gallery.innerHTML = '';
+      barFill.style.width = '0%';
+      statusMain.textContent = 'Запуск...';
+      statusHint.textContent = 'Подготавливаю список артов для генерации.';
+      statusProgress.textContent = `0 / ${total}`;
+      statusEta.textContent = '—';
+      setDot('running');
+
+      startBtn.disabled = true;
+
+      const startTime = Date.now();
+
+      try{
+        for(let i=0;i<total;i++){
+          const elapsed = Date.now() - startTime;
+          const done = i;
+          const progress = Math.round((done/total)*100);
+
+          statusProgress.textContent = `${i} / ${total}`;
+          barFill.style.width = `${progress}%`;
+          const remaining = Math.max(0, total - i);
+          const etaMs = remaining * delay;
+          statusEta.textContent = `ETA ~ ${(etaMs/1000).toFixed(1)}с`;
+
+          // “Генерация” одной карточки (симуляция)
+          statusMain.textContent = `Генерация: арт #${i+1}`;
+          statusHint.textContent = 'Имитирую очередь генерации и подготовку результата...';
+          await sleep(delay);
+
+          // Варианты/промпты (для реального проекта замените на ваши промпты и API)
+          const variants = ['Фокс-фурри', 'Лис-камо', 'Котофурри', 'Волчий оскал', 'Пантера-ночь', 'Медовый мех'];
+          const variant = variants[i % variants.length];
+
+          const prompt = `Артём (персонаж) — стиль фурри, персонаж: ${variant}, динамичный позинг, качественный рендер (демо).`;
+
+          // Добавляем карточку в галерею
+          const card = makeCard(i, prompt, `Вариант: ${variant}`);
+          gallery.appendChild(card);
+
+          // Лёгкая “пауза” визуально
+          await sleep(80);
+        }
+
+        barFill.style.width = '100%';
+        statusMain.textContent = 'Готово ✅';
+        statusHint.textContent = 'Все арты (в демо-режиме) добавлены в галерею.';
+        statusProgress.textContent = `${total} / ${total}`;
+        statusEta.textContent = '—';
+        setDot('done');
+      } catch (e){
+        console.error(e);
+        statusMain.textContent = 'Ошибка ❌';
+        statusHint.textContent = 'Что-то пошло не так. Проверьте параметры и попробуйте снова.';
+        setDot('fail');
+      } finally {
+        startBtn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
